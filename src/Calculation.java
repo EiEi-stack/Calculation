@@ -1,27 +1,25 @@
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 public class Calculation {
-    private static String formula;
+    private static BigDecimal output = new BigDecimal(0);
 
     public static void main(String args[]) {
+        String userInput = null;
+        output.setScale(2, RoundingMode.HALF_UP);
         try {
-            //[+-]?([0-9]*[.])?[0-9]+])
             Scanner scanner = new Scanner(System.in);
             System.out.print("INPUT:");
-            formula = scanner.nextLine();
+            userInput = scanner.nextLine();
             scanner.close();
-        } catch (InputMismatchException e) {
-            System.out.println(e);
-
         } catch (NumberFormatException e) {
             System.out.println(e);
         }
 
-
-        String[] rawInputArray = formula.split("", -1);
+        String[] rawInputArray = userInput.split("", -1);
         List<String> inputArray = new ArrayList<>();
         String temp = "";
-
 
         for (String value : rawInputArray) {
             if (value.matches("^[0-9]+|[.]|[0-9]+")) {
@@ -37,56 +35,68 @@ public class Calculation {
         }
         inputArray.add(temp);
         inputArray.removeAll(Arrays.asList("", null));
-        String inputString = String.join("", inputArray);
-        //((12.9-80)*70ab/4)
+        String inputFormulas = String.join("", inputArray);
 
         Calculation cal = new Calculation();
-        double result = cal.calc(inputString);
-        System.out.println(result);
+        cal.findParentheses(inputFormulas);
+        System.out.println("OUTPUT:" + output);
     }
 
-    private double calc(String sFormula) {
-//        BigDecimal result = new BigDecimal(0);
-        // 実装start[^([-+/*]\d+(\.\d+)?)*]
-        // 実装end
-        int index;
-        if (sFormula.charAt(0) == '-' || sFormula.charAt(0) == '+') {
-            sFormula = '0' + sFormula;
+    public BigDecimal calc(String sFormula) throws RuntimeException {
+        BigDecimal result = new BigDecimal(0);
+        result.setScale(2, RoundingMode.HALF_UP);
+        int index = 0;
+
+        if (sFormula.contains("+")) {
+            index = sFormula.indexOf("+");
+            return result = calc(sFormula.substring(0, index)).add(calc(sFormula.substring(index + 1, sFormula.length())));
         }
-        if ((index = find(sFormula, '+')) >= 0) {
-            return (calc(sFormula.substring(0, index) + calc(sFormula.substring(index + 1, sFormula.length()))));
-        } else if ((index = find(sFormula, '-')) >= 0) {
-            return (calc(sFormula.substring(0, index)) - calc(sFormula.substring(index + 1, sFormula.length())));
-        } else if ((index = find(sFormula, '*')) >= 0) {
-            return (calc(sFormula.substring(0, index)) * calc(sFormula.substring(index + 1, sFormula.length())));
-        } else if ((index = find(sFormula, '/')) >= 0) {
-            return (calc(sFormula.substring(0, index)) / calc(sFormula.substring(index + 1, sFormula.length())));
+        if (sFormula.contains("-")) {
+            index = sFormula.indexOf("-");
+            return result = calc(sFormula.substring(0, index)).subtract(calc(sFormula.substring(index + 1, sFormula.length())));
         }
-        if (sFormula.charAt(0) == '(') {
-            if (sFormula.charAt(sFormula.length() - 1) == ')') {
-                return (calc(sFormula.substring(1, sFormula.length() - 1)));
+        if (sFormula.contains("*")) {
+            index = sFormula.indexOf("*");
+            return result = calc(sFormula.substring(0, index)).multiply(calc(sFormula.substring(index + 1, sFormula.length())));
+        }
+        if (sFormula.contains("/")) {
+            index = sFormula.indexOf("/");
+            return result = calc(sFormula.substring(0, index)).divide(calc(sFormula.substring(index + 1, sFormula.length())));
+        }
+
+        return new BigDecimal(sFormula).setScale(2, RoundingMode.HALF_UP).stripTrailingZeros();
+    }
+
+    private String findParentheses(String inputFormula) {
+        int startIndex = 0;
+        int endIndex = 0;
+        Boolean hasNoParentheses = false;
+        for (int i = 0; i < inputFormula.length(); i++) {
+            if (inputFormula.charAt(i) == '(') {
+                startIndex = i + 1;
+            }
+            if (inputFormula.charAt(i) == ')') {
+                endIndex = i;
+                break;
+            }
+        }
+        try {
+            String subExpression = inputFormula.substring(startIndex, endIndex);
+            if (!subExpression.equals("")) {
+                BigDecimal subValue = calc(subExpression);
+                inputFormula = inputFormula.replace(inputFormula.substring(startIndex - 1, endIndex + 1), subValue.toString());
             } else {
-
+                output = calc(inputFormula);
             }
+            if (startIndex == 0 && endIndex == 0) {
+                hasNoParentheses = true;
+            }
+            if (hasNoParentheses != true) {
+                findParentheses(inputFormula);
+            }
+        } catch (RuntimeException e) {
+            System.out.println(e);
         }
-        return Double.parseDouble(sFormula);
+        return inputFormula;
     }
-
-    private int find(String inpuString, char ch) {
-        int count = 0;
-        for (int i = inpuString.length() - 1; i >= 0; i--) {
-            if (inpuString.charAt(i) == '(') {
-                count++;
-            }
-            if (inpuString.charAt(i) == ')') {
-                count--;
-            }
-            if (inpuString.charAt(i) == ch && count == 0) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-
 }
