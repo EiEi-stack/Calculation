@@ -3,11 +3,9 @@ import java.math.RoundingMode;
 import java.util.*;
 
 public class Calculation {
-    private static BigDecimal output = new BigDecimal(0);
 
     public static void main(String args[]) {
         String userInput = null;
-        output.setScale(2, RoundingMode.HALF_UP);
         try {
             Scanner scanner = new Scanner(System.in);
             System.out.print("INPUT:");
@@ -38,8 +36,8 @@ public class Calculation {
         String inputFormulas = String.join("", inputArray);
 
         Calculation cal = new Calculation();
-        cal.findParentheses(inputFormulas);
-        System.out.println("OUTPUT:" + output);
+        String result = cal.findParentheses(inputFormulas);
+        System.out.println("OUTPUT:" + result);
     }
 
     public BigDecimal calc(String sFormula) throws RuntimeException {
@@ -70,29 +68,21 @@ public class Calculation {
     private String findParentheses(String inputFormula) {
         int startIndex = 0;
         int endIndex = 0;
-        Boolean hasNoParentheses = false;
-        for (int i = 0; i < inputFormula.length(); i++) {
-            if (inputFormula.charAt(i) == '(') {
-                startIndex = i + 1;
-            }
-            if (inputFormula.charAt(i) == ')') {
-                endIndex = i;
-                break;
-            }
+        endIndex = inputFormula.indexOf(")");
+        if (endIndex > -1) {
+            startIndex = inputFormula.substring(0, endIndex).lastIndexOf("(");
+            startIndex++;
         }
         try {
-            String subExpression = inputFormula.substring(startIndex, endIndex);
-            if (!subExpression.equals("")) {
-                BigDecimal subValue = calc(subExpression);
-                inputFormula = inputFormula.replace(inputFormula.substring(startIndex - 1, endIndex + 1), subValue.toString());
+            if (endIndex > -1) {
+                String subFormula = inputFormula.substring(startIndex, endIndex);
+                if (!subFormula.equals("")) {
+                    BigDecimal subValue = calc(subFormula);
+                    inputFormula = inputFormula.replace(inputFormula.substring(startIndex - 1, endIndex + 1), subValue.toString());
+                    return findParentheses(inputFormula);
+                }
             } else {
-                output = calc(inputFormula);
-            }
-            if (startIndex == 0 && endIndex == 0) {
-                hasNoParentheses = true;
-            }
-            if (hasNoParentheses != true) {
-                findParentheses(inputFormula);
+                return calc(inputFormula).toString();
             }
         } catch (RuntimeException e) {
             System.out.println(e);
